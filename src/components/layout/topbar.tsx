@@ -36,7 +36,13 @@ function SignOutButton() {
   );
 }
 
-export function Topbar({ userEmail }: { userEmail: string }) {
+export function Topbar({
+  userEmail,
+  role,
+}: {
+  userEmail: string;
+  role: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -59,7 +65,7 @@ export function Topbar({ userEmail }: { userEmail: string }) {
           <SheetHeader className="sr-only">
             <SheetTitle>Menu navigasi</SheetTitle>
           </SheetHeader>
-          <MobileNav onNavigate={() => setOpen(false)} />
+          <MobileNav role={role} onNavigate={() => setOpen(false)} />
         </SheetContent>
       </Sheet>
 

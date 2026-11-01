@@ -4,6 +4,7 @@ import { id as localeId } from "date-fns/locale";
 import {
   AlertTriangle,
   ArrowRight,
+  Bell,
   CheckCircle2,
   Clock,
   KeyRound,
@@ -79,7 +80,7 @@ function StatCard({
   icon: LucideIcon;
 }) {
   return (
-    <Card className="bg-card border-border">
+    <Card className="bg-card border-border shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
@@ -87,7 +88,9 @@ function StatCard({
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-semibold tracking-tight">{value}</div>
+        <div className="text-2xl font-heading font-bold tracking-tight">
+          {value}
+        </div>
         {description ? (
           <p className="mt-1 text-xs text-muted-foreground">{description}</p>
         ) : null}
@@ -113,6 +116,7 @@ export default async function DashboardPage() {
     failedResult,
     deliveryRecentResult,
     notificationRecentResult,
+    reminderConfigResult, // <-- Tambahan query reminder
   ] = await Promise.all([
     supabase
       .from("bot_status")
@@ -152,11 +156,20 @@ export default async function DashboardPage() {
       .select("id, status, recipient_jid, schedule_id")
       .order("id", { ascending: false })
       .limit(5),
+
+    // Mengambil konfigurasi reminder yang aktif
+    supabase
+      .from("reminder_configs")
+      .select("initial_delay_minutes, interval_minutes, max_attempts")
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const bot = botResult.data as BotStatusRow | null;
   const schedules = (schedulesResult.data ?? []) as ScheduleRow[];
   const passwords = (passwordsResult.data ?? []) as PasswordRow[];
+  const reminderConfig = reminderConfigResult.data;
 
   const isBotConnected = bot?.status === "connected";
   const nextSchedule = getNextSchedule(schedules, now);
@@ -221,7 +234,6 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Alert yang lebih clean (tidak coklat kusam) */}
       {(!isBotConnected || missingPasswordLabels.length > 0) && (
         <Alert
           variant="destructive"
@@ -250,7 +262,6 @@ export default async function DashboardPage() {
         </Alert>
       )}
 
-      {/* Stat Cards: Lebih tegas dan modern */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -265,7 +276,7 @@ export default async function DashboardPage() {
             />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tracking-tight">
+            <div className="text-2xl font-heading font-bold tracking-tight">
               {isBotConnected ? "Connected" : "Disconnected"}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -278,54 +289,27 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pesan Terkirim
-            </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight">{sentCount}</div>
-            <p className="mt-1 text-xs text-muted-foreground">Hari ini</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pesan Gagal
-            </CardTitle>
-            <XCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight">
-              {failedCount}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">Hari ini</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Jadwal Aktif
-            </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight">
-              {schedules.length}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Jadwal pengiriman
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Pesan Terkirim"
+          value={sentCount}
+          description="Hari ini"
+          icon={CheckCircle2}
+        />
+        <StatCard
+          title="Pesan Gagal"
+          value={failedCount}
+          description="Hari ini"
+          icon={XCircle}
+        />
+        <StatCard
+          title="Jadwal Aktif"
+          value={schedules.length}
+          description="Jadwal pengiriman"
+          icon={Clock}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Next Schedule */}
         <Card className="shadow-sm lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-base">Jadwal Berikutnya</CardTitle>
@@ -358,7 +342,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Kelengkapan Password */}
         <Card className="shadow-sm lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-base">Kelengkapan Password</CardTitle>
@@ -393,30 +376,56 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Ringkasan Grup */}
+        {/* Card Baru: Pengingat Musyrif (Menggantikan Ringkasan Grup) */}
         <Card className="shadow-sm lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-base">Grup WhatsApp</CardTitle>
+            <CardTitle className="text-base">Pengingat Musyrif</CardTitle>
+            <CardDescription>
+              Konfigurasi waktu pengiriman reminder.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-4">
-              <p className="text-sm text-muted-foreground">
-                Pastikan bot tergabung dalam grup dan status grup berwarna hijau
-                (aktif) agar pesan dapat terkirim.
-              </p>
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground">
+                  <Bell className="h-5 w-5" />
+                </div>
+                <div>
+                  {reminderConfig ? (
+                    <>
+                      <div className="text-lg font-bold">
+                        Delay {reminderConfig.initial_delay_minutes} Menit
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Dikirim setelah jadwal. Diulang tiap{" "}
+                        {reminderConfig.interval_minutes} menit (maks.{" "}
+                        {reminderConfig.max_attempts}x).
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-lg font-bold text-muted-foreground">
+                        Belum Diatur
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Tidak ada konfigurasi reminder yang aktif saat ini.
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
               <Button
-                render={<Link href="/dashboard/groups" />}
+                render={<Link href="/dashboard/reminders" />}
                 variant="outline"
-                className="w-full"
+                className="w-full mt-auto"
               >
-                Cek Status Grup <ArrowRight className="ml-2 h-4 w-4" />
+                Kelola Reminder <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Log Terakhir */}
       <Card className="shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>

@@ -6,8 +6,18 @@ import { MessageSquareText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navItems } from "@/components/layout/nav-items";
 
-export function MobileNav({ onNavigate }: { onNavigate?: () => void }) {
+export function MobileNav({
+  role,
+  onNavigate,
+}: {
+  role: string;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
+
+  const allowedItems = navItems.filter(
+    (item) => !item.superadminOnly || role === "superadmin",
+  );
 
   return (
     <div className="flex h-full flex-col">

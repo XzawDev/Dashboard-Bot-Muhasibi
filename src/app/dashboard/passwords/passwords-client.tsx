@@ -7,7 +7,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { Plus, Lock, ChevronDown, ChevronUp, Archive } from "lucide-react";
+import {
+  Plus,
+  Lock,
+  ChevronDown,
+  ChevronUp,
+  Archive,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,6 +24,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -32,7 +49,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { setPasswordAction } from "./actions";
+import { setPasswordAction, deletePasswordAction } from "./actions";
 
 type ScheduleOption = { id: string; name: string; send_time: string };
 
@@ -71,22 +88,18 @@ function labelForDate(dateStr: string) {
   }
 }
 
-// Helper cek apakah jam sholat sudah lewat
 function isSchedulePassed(validDate: string, sendTime: string) {
   const scheduleDateTime = new Date(`${validDate}T${sendTime}`);
   return scheduleDateTime < new Date();
 }
 
-// Helper cek apakah SEMUA jam sholat di tanggal tersebut sudah lewat
 function isDateCompleted(
   dateStr: string,
   schedules: ScheduleOption[],
   todayStr: string,
 ) {
-  if (dateStr < todayStr) return true; // Tanggal kemarin atau lampau
-  if (dateStr > todayStr) return false; // Tanggal besok atau mendatang
-
-  // Jika hari ini, cek apakah SEMUA jadwal hari ini sudah lewat
+  if (dateStr < todayStr) return true;
+  if (dateStr > todayStr) return false;
   const now = new Date();
   return schedules.every((s) => {
     const scheduleTime = new Date(`${dateStr}T${s.send_time}`);
@@ -101,6 +114,7 @@ function PasswordSection({
   passwords,
   validDate,
   onPick,
+  onDelete,
 }: {
   title: string;
   dateLabel: string;
@@ -108,6 +122,7 @@ function PasswordSection({
   passwords: PasswordItem[];
   validDate: string;
   onPick: (item: PasswordItem) => void;
+  onDelete: (item: PasswordItem) => void;
 }) {
   const bySchedule = new Map(passwords.map((p) => [p.scheduleId, p]));
 
@@ -124,14 +139,17 @@ function PasswordSection({
 
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground">Jadwal</TableHead>
-                <TableHead className="text-muted-foreground">
+                {/* Lebar kolom dibuat fix agar sejajar antar card */}
+                <TableHead className="w-[30%] text-muted-foreground">
+                  Jadwal
+                </TableHead>
+                <TableHead className="w-[40%] text-muted-foreground">
                   Password
                 </TableHead>
-                <TableHead className="text-right text-muted-foreground">
+                <TableHead className="w-[30%] text-right text-muted-foreground">
                   Aksi
                 </TableHead>
               </TableRow>
@@ -157,7 +175,7 @@ function PasswordSection({
                       key={s.id}
                       className="border-border hover:bg-muted/50"
                     >
-                      <TableCell className="text-foreground font-medium">
+                      <TableCell className="text-foreground font-medium truncate">
                         {s.name}
                         <span className="block text-xs text-muted-foreground font-normal">
                           {s.send_time.slice(0, 5)}
@@ -166,7 +184,7 @@ function PasswordSection({
                       <TableCell>
                         {current ? (
                           <span
-                            className={`font-mono text-sm tracking-wider ${isPassed ? "text-muted-foreground/50" : "text-foreground"}`}
+                            className={`font-mono text-sm tracking-wider truncate block ${isPassed ? "text-muted-foreground/50 line-through" : "text-foreground"}`}
                           >
                             {current.passwordValue}
                           </span>
@@ -177,35 +195,51 @@ function PasswordSection({
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {isPassed ? (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            disabled
-                            className="text-muted-foreground/50"
-                          >
-                            <Lock className="mr-2 h-3 w-3" />
-                            Terkunci
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              onPick(
-                                current ?? {
-                                  id: "",
-                                  scheduleId: s.id,
-                                  scheduleName: s.name,
-                                  validDate,
-                                  passwordValue: "",
-                                },
-                              )
-                            }
-                          >
-                            {current ? "Ubah" : "Isi"}
-                          </Button>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          {isPassed ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled
+                              className="h-8 text-muted-foreground/50 px-2"
+                            >
+                              <Lock className="h-3 w-3 mr-1" />
+                              Selesai
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 px-3"
+                              onClick={() =>
+                                onPick(
+                                  current ?? {
+                                    id: "",
+                                    scheduleId: s.id,
+                                    scheduleName: s.name,
+                                    validDate,
+                                    passwordValue: "",
+                                  },
+                                )
+                              }
+                            >
+                              {current ? "Ubah" : "Isi"}
+                            </Button>
+                          )}
+
+                          {/* Tombol Hapus: Hanya muncul jika data password ada */}
+                          {current && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => onDelete(current)}
+                              title="Hapus Password"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -229,9 +263,11 @@ export function PasswordsClient({
   const [preset, setPreset] = useState<{ scheduleId?: string; date?: string }>(
     {},
   );
-
-  // State untuk hide/show riwayat selesai
   const [showCompleted, setShowCompleted] = useState(false);
+
+  // State untuk menyimpan data yang akan dihapus
+  const [deleteTarget, setDeleteTarget] = useState<PasswordItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   function openCreate() {
     setPreset({ date: initialToday });
@@ -248,7 +284,21 @@ export function PasswordsClient({
     setOpen(true);
   }
 
-  // Pisahkan data menjadi Aktif dan Selesai
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+
+    const result = await deletePasswordAction(deleteTarget.id);
+
+    setIsDeleting(false);
+    if (result.ok) {
+      setDeleteTarget(null);
+      router.refresh();
+    } else {
+      alert(result.error);
+    }
+  }
+
   const activeGroups: DateGroup[] = [];
   const completedGroups: DateGroup[] = [];
 
@@ -290,7 +340,6 @@ export function PasswordsClient({
         </Card>
       ) : (
         <div className="space-y-6">
-          {/* Bagian 1: Jadwal Aktif */}
           {activeGroups.length > 0 && (
             <div className="grid gap-6">
               {activeGroups.map((group) => (
@@ -302,12 +351,12 @@ export function PasswordsClient({
                   passwords={group.passwords}
                   validDate={group.date}
                   onPick={(item) => pickItem(item, group.date)}
+                  onDelete={setDeleteTarget}
                 />
               ))}
             </div>
           )}
 
-          {/* Bagian 2: Riwayat Selesai (Disembunyikan) */}
           {completedGroups.length > 0 && (
             <div className="pt-4 border-t border-border mt-8">
               <Button
@@ -328,7 +377,6 @@ export function PasswordsClient({
                 )}
               </Button>
 
-              {/* Render kartu jika tombol diklik */}
               {showCompleted && (
                 <div className="grid gap-6 mt-6 opacity-70 animate-in fade-in slide-in-from-top-2 duration-300">
                   {completedGroups.map((group) => (
@@ -340,6 +388,7 @@ export function PasswordsClient({
                       passwords={group.passwords}
                       validDate={group.date}
                       onPick={(item) => pickItem(item, group.date)}
+                      onDelete={setDeleteTarget}
                     />
                   ))}
                 </div>
@@ -360,6 +409,36 @@ export function PasswordsClient({
           router.refresh();
         }}
       />
+
+      {/* Alert Dialog Konfirmasi Hapus */}
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Password?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus password untuk jadwal{" "}
+              <strong>{deleteTarget?.scheduleName}</strong> pada tanggal{" "}
+              <strong>
+                {deleteTarget && labelForDate(deleteTarget.validDate)}
+              </strong>
+              ? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Menghapus..." : "Ya, Hapus"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

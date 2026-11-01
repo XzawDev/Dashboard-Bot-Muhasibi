@@ -41,3 +41,12 @@ export type NotificationLogRow = {
   recipient_jid: string | null;
   schedule_id: string | null;
 };
+
+export type GroupRow = {
+  id: string;
+  name: string;
+  group_jid: string;
+  is_active: boolean;
+  is_joined: boolean;
+  synced_at: string | null;
+};

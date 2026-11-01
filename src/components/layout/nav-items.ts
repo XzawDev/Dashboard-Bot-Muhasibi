@@ -6,19 +6,19 @@ import {
   MessageSquareText,
   ScrollText,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 
-export const navItems = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Password",
-    href: "/dashboard/passwords",
-    icon: KeyRound,
-  },
+type NavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  superadminOnly?: boolean;
+};
+
+export const navItems: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Password", href: "/dashboard/passwords", icon: KeyRound },
   {
     label: "Jadwal",
     href: "/dashboard/schedules",
@@ -28,6 +28,7 @@ export const navItems = [
     label: "Grup WhatsApp",
     href: "/dashboard/groups",
     icon: Users,
+    superadminOnly: true,
   },
   {
     label: "Musyrif",
@@ -39,9 +40,5 @@ export const navItems = [
     href: "/dashboard/templates",
     icon: MessageSquareText,
   },
-  {
-    label: "Log & Riwayat",
-    href: "/dashboard/logs",
-    icon: ScrollText,
-  },
+  { label: "Log & Riwayat", href: "/dashboard/logs", icon: ScrollText },
 ];

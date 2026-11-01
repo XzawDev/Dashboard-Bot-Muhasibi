@@ -6,8 +6,13 @@ import { MessageSquareText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navItems } from "@/components/layout/nav-items";
 
-export function Sidebar() {
+// Tambahkan parameter role di sini
+export function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
+
+  const allowedItems = navItems.filter(
+    (item) => !item.superadminOnly || role === "superadmin",
+  );
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-background lg:flex">
@@ -21,7 +26,8 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 p-3">
-        {navItems.map((item) => {
+        {/* Ganti navItems.map menjadi allowedItems.map */}
+        {allowedItems.map((item) => {
           const Icon = item.icon;
           const active =
             item.href === "/dashboard"

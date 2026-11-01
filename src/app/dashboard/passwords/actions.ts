@@ -67,3 +67,20 @@ export async function setPasswordAction(
   revalidatePath("/dashboard");
   return { ok: true };
 }
+
+export async function deletePasswordAction(id: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { ok: false, error: "Sesi habis." };
+
+  const { error } = await supabase.from("passwords").delete().eq("id", id);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/dashboard/passwords");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
