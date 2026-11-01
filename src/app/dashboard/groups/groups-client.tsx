@@ -1,6 +1,5 @@
 "use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Users,
@@ -44,6 +43,7 @@ import {
 } from "@/components/ui/card";
 import { toggleGroupWhitelist, verifyGroupsPagePassword } from "./actions";
 import type { GroupRow } from "@/types/db";
+import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 
 export function GroupsClient({ initialGroups }: { initialGroups: GroupRow[] }) {
   const router = useRouter();
@@ -63,6 +63,14 @@ export function GroupsClient({ initialGroups }: { initialGroups: GroupRow[] }) {
   const [password, setPassword] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Sinkronkan state saat props berubah (dari router.refresh())
+  useEffect(() => {
+    setGroups(initialGroups);
+  }, [initialGroups]);
+
+  // Berlangganan realtime
+  useRealtimeRefresh(["whatsapp_groups"]);
 
   // --- LOGIKA BUKA KUNCI HALAMAN ---
   async function handleUnlock(e: React.FormEvent) {

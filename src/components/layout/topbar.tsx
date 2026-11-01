@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { createClient } from "@/lib/supabase/client";
+import { LiveClock } from "@/components/layout/live-clock";
 
 function SignOutButton() {
   const router = useRouter();
@@ -29,7 +30,7 @@ function SignOutButton() {
       size="icon"
       onClick={handleSignOut}
       aria-label="Keluar"
-      className="text-muted-foreground hover:text-foreground"
+      className="text-muted-foreground hover:text-foreground shrink-0"
     >
       <LogOut className="h-4 w-4" />
     </Button>
@@ -46,12 +47,12 @@ export function Topbar({
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background px-4 lg:px-8">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background px-4 lg:px-8">
       <Sheet open={open} onOpenChange={setOpen}>
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden"
+          className="lg:hidden shrink-0"
           aria-label="Buka menu"
           onClick={() => setOpen(true)}
         >
@@ -69,9 +70,19 @@ export function Topbar({
         </SheetContent>
       </Sheet>
 
+      {/* Spacer agar jam dan tombol logout didorong ke kanan */}
       <div className="flex-1" />
 
-      <span className="hidden max-w-55 truncate text-xs text-muted-foreground sm:block">
+      {/* JAM WIB - Muncul di semua ukuran layar */}
+      <div className="mr-1 sm:mr-2 shrink-0">
+        <LiveClock />
+      </div>
+
+      {/* Garis Pemisah - Hanya muncul di Desktop/Tablet */}
+      <div className="h-4 w-px bg-border mx-1 hidden sm:block shrink-0" />
+
+      {/* Email - Disembunyikan di HP agar tidak sesak, muncul di Tablet ke atas */}
+      <span className="hidden max-w-55 truncate text-xs font-medium text-muted-foreground sm:block shrink-0">
         {userEmail}
       </span>
 

@@ -1,4 +1,6 @@
 import { format } from "date-fns";
+import { getTodayWib, getNowWib, formatDateWib } from "@/lib/time";
+import { addDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import type { ScheduleRow } from "@/types/db";
 import { PasswordsClient } from "./passwords-client";
@@ -19,7 +21,8 @@ type RawPassword = {
 
 export default async function PasswordsPage() {
   const supabase = await createClient();
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = getTodayWib();
+  const tomorrow = formatDateWib(addDays(getNowWib(), 1), "yyyy-MM-dd");
 
   const [schedulesRes, passwordsRes] = await Promise.all([
     supabase

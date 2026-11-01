@@ -49,6 +49,7 @@ import {
   deleteMusyrif,
 } from "./actions";
 import type { MusyrifRow } from "./page";
+import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 
 const formSchema = z.object({
   name: z.string().trim().min(1, "Nama wajib diisi").max(100),
@@ -92,6 +93,12 @@ export function MusyrifsClient({
       router.refresh();
     }
   }
+
+  useEffect(() => {
+    setMusyrifs(initialMusyrifs);
+  }, [initialMusyrifs]);
+
+  useRealtimeRefresh(["musyrif_contacts"]);
 
   async function handleDelete() {
     if (!deleteTarget) return;

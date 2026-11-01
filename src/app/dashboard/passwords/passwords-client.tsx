@@ -50,6 +50,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { setPasswordAction, deletePasswordAction } from "./actions";
+import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 
 type ScheduleOption = { id: string; name: string; send_time: string };
 
@@ -89,7 +90,8 @@ function labelForDate(dateStr: string) {
 }
 
 function isSchedulePassed(validDate: string, sendTime: string) {
-  const scheduleDateTime = new Date(`${validDate}T${sendTime}`);
+  // Tambahkan +07:00 agar browser tahu ini jam WIB
+  const scheduleDateTime = new Date(`${validDate}T${sendTime}+07:00`);
   return scheduleDateTime < new Date();
 }
 
@@ -139,14 +141,14 @@ function PasswordSection({
 
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <Table className="w-full table-fixed">
+          {/* Hapus table-fixed, ganti dengan min-w untuk memicu scroll di mobile */}
+          <Table className="w-full min-w-[550px]">
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
-                {/* Lebar kolom dibuat fix agar sejajar antar card */}
-                <TableHead className="w-[30%] text-muted-foreground">
+                <TableHead className="w-[25%] text-muted-foreground">
                   Jadwal
                 </TableHead>
-                <TableHead className="w-[40%] text-muted-foreground">
+                <TableHead className="w-[45%] text-muted-foreground">
                   Password
                 </TableHead>
                 <TableHead className="w-[30%] text-right text-muted-foreground">
@@ -154,7 +156,6 @@ function PasswordSection({
                 </TableHead>
               </TableRow>
             </TableHeader>
-
             <TableBody>
               {schedules.length === 0 ? (
                 <TableRow className="border-border hover:bg-transparent">
@@ -175,8 +176,8 @@ function PasswordSection({
                       key={s.id}
                       className="border-border hover:bg-muted/50"
                     >
-                      <TableCell className="text-foreground font-medium truncate">
-                        {s.name}
+                      <TableCell className="font-medium">
+                        <div className="text-foreground truncate">{s.name}</div>
                         <span className="block text-xs text-muted-foreground font-normal">
                           {s.send_time.slice(0, 5)}
                         </span>
@@ -195,16 +196,17 @@ function PasswordSection({
                         )}
                       </TableCell>
                       <TableCell className="text-right">
+                        {/* Beri jarak (gap-2) agar tombol tidak tumpang tindih */}
                         <div className="flex items-center justify-end gap-2">
                           {isPassed ? (
                             <Button
                               size="sm"
                               variant="ghost"
                               disabled
-                              className="h-8 text-muted-foreground/50 px-2"
+                              className="h-8 px-2 text-muted-foreground/50"
                             >
                               <Lock className="h-3 w-3 mr-1" />
-                              Selesai
+                              <span className="hidden sm:inline">Selesai</span>
                             </Button>
                           ) : (
                             <Button
@@ -227,7 +229,6 @@ function PasswordSection({
                             </Button>
                           )}
 
-                          {/* Tombol Hapus: Hanya muncul jika data password ada */}
                           {current && (
                             <Button
                               size="sm"
@@ -264,6 +265,8 @@ export function PasswordsClient({
     {},
   );
   const [showCompleted, setShowCompleted] = useState(false);
+
+  useRealtimeRefresh(["passwords", "schedules"]);
 
   // State untuk menyimpan data yang akan dihapus
   const [deleteTarget, setDeleteTarget] = useState<PasswordItem | null>(null);
@@ -321,7 +324,7 @@ export function PasswordsClient({
             Kelola password grup untuk jadwal yang akan datang.
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Tambah Password
         </Button>

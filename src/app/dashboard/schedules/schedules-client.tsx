@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,6 +48,7 @@ import {
   createScheduleAction,
   deleteScheduleAction,
 } from "./actions";
+import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 
 // ============ Skema Form ============
 const timeFormSchema = z.object({
@@ -92,6 +93,12 @@ export function SchedulesClient({
 
   const isFull = schedules.length >= MAX_SCHEDULES;
 
+  useEffect(() => {
+    setSchedules(initialSchedules);
+  }, [initialSchedules]);
+
+  useRealtimeRefresh(["schedules"]);
+
   async function handleToggle(id: string, currentStatus: boolean) {
     setSchedules((prev) =>
       prev.map((s) => (s.id === id ? { ...s, is_active: !currentStatus } : s)),
@@ -134,7 +141,7 @@ export function SchedulesClient({
             Atur waktu pengiriman pesan dan aktifkan/nonaktifkan jadwal.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
           <span className="text-xs text-muted-foreground">
             {schedules.length} / {MAX_SCHEDULES} jadwal
           </span>
@@ -142,6 +149,7 @@ export function SchedulesClient({
             onClick={() => setIsCreateOpen(true)}
             disabled={isFull}
             title={isFull ? "Maksimal 5 waktu salat" : "Tambah jadwal baru"}
+            className="w-full sm:w-auto"
           >
             <Plus className="mr-2 h-4 w-4" />
             Tambah Jadwal
@@ -160,19 +168,20 @@ export function SchedulesClient({
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table className="w-full table-fixed">
+            {/* Hapus table-fixed, tambahkan min-w */}
+            <Table className="w-full min-w-[650px]">
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="w-[30%] text-muted-foreground">
+                  <TableHead className="text-muted-foreground">
                     Nama Jadwal
                   </TableHead>
-                  <TableHead className="w-[20%] text-muted-foreground">
+                  <TableHead className="text-muted-foreground">
                     Waktu Kirim
                   </TableHead>
-                  <TableHead className="w-[20%] text-center text-muted-foreground">
+                  <TableHead className="text-center text-muted-foreground">
                     Status
                   </TableHead>
-                  <TableHead className="w-[30%] text-right text-muted-foreground">
+                  <TableHead className="text-right text-muted-foreground">
                     Aksi
                   </TableHead>
                 </TableRow>
@@ -203,20 +212,22 @@ export function SchedulesClient({
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 font-mono text-sm">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
                           {schedule.send_time.slice(0, 5)}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-3">
+                        {/* Beri flex dan gap yang pas */}
+                        <div className="flex items-center justify-center gap-2">
                           <Switch
                             checked={schedule.is_active}
                             onCheckedChange={() =>
                               handleToggle(schedule.id, schedule.is_active)
                             }
                           />
+                          {/* Sembunyikan teks "Aktif/Nonaktif" di layar kecil (hidden sm:inline) */}
                           <span
-                            className={`text-xs font-medium ${schedule.is_active ? "text-emerald-500" : "text-muted-foreground"}`}
+                            className={`hidden sm:inline text-xs font-medium ${schedule.is_active ? "text-emerald-500" : "text-muted-foreground"}`}
                           >
                             {schedule.is_active ? "Aktif" : "Nonaktif"}
                           </span>
@@ -227,7 +238,7 @@ export function SchedulesClient({
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-8 px-3"
+                            className="h-8 px-3 whitespace-nowrap"
                             onClick={() => setEditTarget(schedule)}
                           >
                             <Edit2 className="h-3.5 w-3.5 mr-1.5" />

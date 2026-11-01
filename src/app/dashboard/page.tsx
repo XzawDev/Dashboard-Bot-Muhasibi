@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { addDays, endOfDay, format, startOfDay } from "date-fns";
+import { getTodayWib, getNowWib, formatDateWib } from "@/lib/time";
 import { id as localeId } from "date-fns/locale";
 import {
   AlertTriangle,
@@ -40,6 +41,7 @@ import type {
   PasswordRow,
   ScheduleRow,
 } from "@/types/db";
+import { RealtimeListener } from "./realtime-listener";
 
 export const dynamic = "force-dynamic";
 
@@ -101,10 +103,9 @@ function StatCard({
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const now = new Date();
-
-  const today = format(now, "yyyy-MM-dd");
-  const tomorrow = format(addDays(now, 1), "yyyy-MM-dd");
+  const now = getNowWib();
+  const today = getTodayWib();
+  const tomorrow = formatDateWib(addDays(now, 1), "yyyy-MM-dd");
   const startOfToday = startOfDay(now).toISOString();
   const endOfToday = endOfDay(now).toISOString();
 
@@ -225,6 +226,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <RealtimeListener />
       <div>
         <h1 className="text-2xl font-heading font-semibold tracking-tight">
           Dashboard

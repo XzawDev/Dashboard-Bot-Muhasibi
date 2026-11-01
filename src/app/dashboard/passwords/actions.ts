@@ -39,12 +39,12 @@ export async function setPasswordAction(
     .single();
 
   if (schedule) {
-    // Gabungkan tanggal validDate dengan jam send_time
+    // Gabungkan tanggal validDate dengan jam send_time, lalu tambahkan timezone +07:00 (WIB)
     const scheduleDateTime = new Date(
-      `${parsed.data.validDate}T${schedule.send_time}`,
+      `${parsed.data.validDate}T${schedule.send_time}+07:00`,
     );
 
-    // Jika waktu sholat tersebut sudah terlewat dari sekarang
+    // Bandingkan dengan waktu sekarang (new Date() otomatis UTC, tapi perbandingannya absolut)
     if (scheduleDateTime < new Date()) {
       return {
         ok: false,
