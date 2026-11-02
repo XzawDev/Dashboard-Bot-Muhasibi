@@ -13,6 +13,7 @@ type RealtimeTable =
   | "message_templates"
   | "delivery_logs"
   | "notification_logs"
+  | "bot_activity_logs"
   | "reminder_logs";
 
 /**
